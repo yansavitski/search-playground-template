@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Message, ChatConfig, ElasticConnection, LLMConfig, ChatRequest, ChatResponse } from '@/types/chat'
+import { defaultConfig, defaultElasticConnection, defaultLLMConfig } from '@/lib/config'
 import ChatHeader from '@/components/ChatHeader'
 import ChatMessage from '@/components/ChatMessage'
 import ChatInput from '@/components/ChatInput'
@@ -11,39 +12,10 @@ export default function HomePage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isConfigOpen, setIsConfigOpen] = useState(false)
-  const [config, setConfig] = useState<ChatConfig>({
-    name: "My ES RAG Playground",
-    indices: ["docs", "faq"],
-    queryFields: {
-      default: ["title^2", "body", "tags"],
-      semantic: ["ml.embeddings"]
-    },
-    elasticsearchQueryJSON: '{"bool":{"must":[{"multi_match":{"query":"__USER_QUERY__","fields":["title^2","body","tags"]}}]}}',
-    userElasticsearchQueryJSON: null,
-    prompt: "Answer based on the retrieved context. Be concise.",
-    citations: true,
-    context: {
-      sourceFields: {
-        default: ["title", "url", "body"]
-      },
-      docSize: 3
-    },
-    summarizationModel: {
-      connectorId: "abc-123",
-      modelId: "gpt-4o-mini"
-    }
-  })
-  
-  const [elasticConnection, setElasticConnection] = useState<ElasticConnection>({
-    cloudId: '',
-    apiKey: ''
-  })
-
-  const [llmConfig, setLLMConfig] = useState<LLMConfig>({
-    provider: 'elasticsearch',
-    apiKey: '',
-    modelName: ''
-  })
+  const [isLoadingConfig, setIsLoadingConfig] = useState(true)
+  const [config, setConfig] = useState<ChatConfig>(defaultConfig)
+  const [elasticConnection, setElasticConnection] = useState<ElasticConnection>(defaultElasticConnection)
+  const [llmConfig, setLLMConfig] = useState<LLMConfig>(defaultLLMConfig)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -54,6 +26,27 @@ export default function HomePage() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Load configuration from environment on component mount
+  useEffect(() => {
+    const loadConfiguration = async () => {
+      try {
+        const response = await fetch('/api/config')
+        if (response.ok) {
+          const envConfig = await response.json()
+          setConfig(envConfig.config)
+          setElasticConnection(envConfig.elasticConnection)
+          setLLMConfig(envConfig.llmConfig)
+        }
+      } catch (error) {
+        console.warn('Failed to load environment configuration, using defaults:', error)
+      } finally {
+        setIsLoadingConfig(false)
+      }
+    }
+
+    loadConfiguration()
+  }, [])
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -110,9 +103,34 @@ export default function HomePage() {
     }
   }
 
+  if (isLoadingConfig) {
+    return (
+      <div className="h-screen flex flex-col">
+        <ChatHeader 
+          onSettingsClick={() => setIsConfigOpen(true)} 
+          title={config.name} 
+        />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Loading Configuration
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Setting up your Elastic Playground...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-screen flex flex-col">
-      <ChatHeader onSettingsClick={() => setIsConfigOpen(true)} />
+      <ChatHeader 
+        onSettingsClick={() => setIsConfigOpen(true)} 
+        title={config.name} 
+      />
       
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
