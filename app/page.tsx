@@ -6,12 +6,10 @@ import { defaultConfig, defaultElasticConnection, defaultLLMConfig } from '@/lib
 import ChatHeader from '@/components/ChatHeader'
 import ChatMessage from '@/components/ChatMessage'
 import ChatInput from '@/components/ChatInput'
-import ConfigPanel from '@/components/ConfigPanel'
 
 export default function HomePage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isConfigOpen, setIsConfigOpen] = useState(false)
   const [isLoadingConfig, setIsLoadingConfig] = useState(true)
   const [config, setConfig] = useState<ChatConfig>(defaultConfig)
   const [elasticConnection, setElasticConnection] = useState<ElasticConnection>(defaultElasticConnection)
@@ -106,10 +104,7 @@ export default function HomePage() {
   if (isLoadingConfig) {
     return (
       <div className="h-screen flex flex-col">
-        <ChatHeader 
-          onSettingsClick={() => setIsConfigOpen(true)} 
-          title={config.name} 
-        />
+        <ChatHeader title="Elastic Playground" />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -127,20 +122,17 @@ export default function HomePage() {
 
   return (
     <div className="h-screen flex flex-col">
-      <ChatHeader 
-        onSettingsClick={() => setIsConfigOpen(true)} 
-        title={config.name} 
-      />
+      <ChatHeader title={config.name} />
       
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Welcome to Elastic Playground
+                Welcome to {config.name}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 max-w-md">
-                Start a conversation to test your RAG setup. Configure your model, index, and prompt using the settings button above.
+                Start a conversation to search through your knowledge base and get AI-powered answers.
               </p>
             </div>
           </div>
@@ -159,7 +151,7 @@ export default function HomePage() {
                     Assistant
                   </div>
                   <div className="text-gray-900 dark:text-gray-100">
-                    Thinking...
+                    Searching and thinking...
                   </div>
                 </div>
               </div>
@@ -172,17 +164,6 @@ export default function HomePage() {
       <ChatInput 
         onSendMessage={handleSendMessage} 
         disabled={isLoading}
-      />
-
-      <ConfigPanel
-        config={config}
-        elasticConnection={elasticConnection}
-        llmConfig={llmConfig}
-        onConfigChange={setConfig}
-        onElasticConnectionChange={setElasticConnection}
-        onLLMConfigChange={setLLMConfig}
-        isOpen={isConfigOpen}
-        onClose={() => setIsConfigOpen(false)}
       />
     </div>
   )

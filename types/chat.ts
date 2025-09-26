@@ -5,11 +5,6 @@ export interface Message {
   timestamp: Date
 }
 
-export interface QueryFields {
-  default: string[]
-  semantic: string[]
-}
-
 export interface SourceFields {
   default: string[]
 }
@@ -27,9 +22,7 @@ export interface SummarizationModel {
 export interface ChatConfig {
   name: string
   indices: string[]
-  queryFields: QueryFields
   elasticsearchQueryJSON: string
-  userElasticsearchQueryJSON: string | null
   prompt: string
   citations: boolean
   context: Context
@@ -39,9 +32,12 @@ export interface ChatConfig {
 export interface ElasticConnection {
   cloudId: string
   apiKey: string
+  url?: string
+  username?: string
+  password?: string
 }
 
-export type LLMProvider = 'openai' | 'elasticsearch' | 'azure-openai'
+export type LLMProvider = 'openai' | 'azure-openai'
 
 export interface LLMConfig {
   provider: LLMProvider

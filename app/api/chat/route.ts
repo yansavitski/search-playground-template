@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatRequest, ChatResponse } from '@/types/chat'
+import { createElasticsearchClient, searchDocuments, testConnection, checkIndexExists } from '@/lib/elasticsearch'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Search Elasticsearch for relevant documents
     const searchResults = await searchElasticsearch(message, config, elasticConnection)
-    
+
     // Step 2: Generate response using LLM with context
     const llmResponse = await generateLLMResponse(message, searchResults, config, llmConfig)
 
@@ -36,52 +37,65 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function searchElasticsearch(query: string, config: any, connection: any) {
-  if (!connection.cloudId || !connection.apiKey) {
-    // Return mock results for demo
-    return {
-      hits: [
-        {
-          _source: {
-            title: "Sample Document",
-            body: "This is a sample document that would be retrieved from Elasticsearch.",
-            url: "https://example.com/doc1"
-          },
-          _score: 1.5
-        }
-      ]
-    }
-  }
+async function searchElasticsearch(question: string, config: any, connection: any) {
+  try {
+    const client = createElasticsearchClient(connection)
 
-  // TODO: Implement real Elasticsearch search
-  // For now, return mock data
-  return {
-    hits: [
-      {
-        _source: {
-          title: "Mock Document",
-          body: `Mock search result for query: "${query}"`,
-          url: "https://example.com/mock"
-        },
-        _score: 1.0
-      }
-    ]
+    const isConnected = await testConnection(client)
+
+    if (!isConnected) {
+      console.warn('Elasticsearch connection failed, using mock data')
+      return { hits: [], total: 0 }
+    }
+
+    const searchResults = await searchDocuments(
+      client,
+      question,
+      config.indices,
+      config.elasticsearchQueryJSON,
+      config.context?.docSize
+    )
+
+    return searchResults
+  } catch (error) {
+    console.error('Elasticsearch search failed:', error)
+    return { hits: [], total: 0 }
   }
 }
 
 async function generateLLMResponse(query: string, searchResults: any, config: any, llmConfig: any) {
+  // Build context from search results using configured source fields
+  const sourceFields = config.context?.sourceFields?.default || ['title', 'body', 'content']
+  
   const context = searchResults.hits
-    .map((hit: any) => `Title: ${hit._source.title}\nContent: ${hit._source.body}`)
-    .join('\n\n')
+    .map((hit: any, index: number) => {
+      const doc = hit._source
+      let docText = `Document ${index + 1} (Score: ${hit._score?.toFixed(2)}):\n`
+      
+      sourceFields.forEach((field: string) => {
+        if (doc[field]) {
+          const fieldName = field.charAt(0).toUpperCase() + field.slice(1)
+          docText += `${fieldName}: ${doc[field]}\n`
+        }
+      })
+      
+      // Add URL if available
+      if (doc.url) {
+        docText += `URL: ${doc.url}\n`
+      }
+      
+      return docText
+    })
+    .join('\n---\n\n')
 
   const prompt = `${config.prompt}
 
-Context from search results:
+Context from Elasticsearch search (found ${searchResults.hits.length} relevant documents):
 ${context}
 
 User question: ${query}
 
-Please provide a helpful answer based on the context above.`
+Please provide a helpful answer based on the context above.${config.citations ? ' Include references to the source documents where appropriate.' : ''}`
 
   switch (llmConfig.provider) {
     case 'openai':

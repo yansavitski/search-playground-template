@@ -2,15 +2,10 @@ import { ChatConfig, ElasticConnection, LLMConfig, LLMProvider } from '@/types/c
 
 // Default configuration that matches the expected format
 export const defaultConfig: ChatConfig = {
-  name: "My ES RAG Playground",
-  indices: ["docs", "faq"],
-  queryFields: {
-    default: ["title^2", "body", "tags"],
-    semantic: ["ml.embeddings"]
-  },
-  elasticsearchQueryJSON: '{"bool":{"must":[{"multi_match":{"query":"__USER_QUERY__","fields":["title^2","body","tags"]}}]}}',
-  userElasticsearchQueryJSON: null,
-  prompt: "Answer based on the retrieved context. Be concise.",
+  name: "Elastic Playground",
+  indices: [ 'kibana_sample_data_elasticsearch_documentation'],
+  elasticsearchQueryJSON: '{"retriever":{"rrf":{"retrievers":[{"standard":{"query":{"semantic":{"field":"ai_questions_answered","query":"{query}"}}}},{"standard":{"query":{"semantic":{"field":"ai_summary","query":"{query}"}}}},{"standard":{"query":{"semantic":{"field":"content_body","query":"{query}"}}}}]}},"highlight":{"fields":{"ai_questions_answered":{"type":"semantic","number_of_fragments":2,"order":"score"},"ai_summary":{"type":"semantic","number_of_fragments":2,"order":"score"},"content_body":{"type":"semantic","number_of_fragments":2,"order":"score"}}}}',
+  prompt: 'You are an assistant for question-answering tasks.',
   citations: true,
   context: {
     sourceFields: {
@@ -72,6 +67,16 @@ export function loadConfigFromEnv(): {
       }
       if (process.env.ELASTIC_API_KEY) {
         elasticConnection.apiKey = process.env.ELASTIC_API_KEY
+      }
+      // For local Elasticsearch
+      if (process.env.ELASTIC_URL) {
+        elasticConnection.url = process.env.ELASTIC_URL
+      }
+      if (process.env.ELASTIC_USERNAME) {
+        elasticConnection.username = process.env.ELASTIC_USERNAME
+      }
+      if (process.env.ELASTIC_PASSWORD) {
+        elasticConnection.password = process.env.ELASTIC_PASSWORD
       }
 
       // Load LLM configuration
