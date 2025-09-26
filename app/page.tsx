@@ -96,7 +96,7 @@ export default function HomePage() {
   if (isLoadingConfig) {
     return (
       <div className="h-screen flex flex-col">
-        <ChatHeader title="Elastic Playground" />
+        <ChatHeader />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>

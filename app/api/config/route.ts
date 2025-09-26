@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import { loadConfigFromEnv } from '@/lib/config'
+import { PublicConfig } from '@/types/chat'
 
 export async function GET() {
   try {
-    const configuration = loadConfigFromEnv()
+    const { config } = loadConfigFromEnv()
     
-    return NextResponse.json(configuration)
+    // Return only public configuration
+    const publicConfig: PublicConfig = {
+      name: config.name || 'Elastic Playground',
+      citations: config.citations || false
+    }
+    
+    return NextResponse.json(publicConfig)
   } catch (error) {
     console.error('Error loading configuration:', error)
     return NextResponse.json(
