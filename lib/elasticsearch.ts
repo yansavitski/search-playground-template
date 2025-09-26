@@ -2,7 +2,6 @@ import { Client } from '@elastic/elasticsearch'
 import { ElasticConnection } from '@/types/chat'
 
 export function createElasticsearchClient(connection: ElasticConnection): Client {
-  // For Elastic Cloud
   if (connection.cloudId && connection.apiKey) {
     return new Client({
       cloud: {
@@ -13,14 +12,12 @@ export function createElasticsearchClient(connection: ElasticConnection): Client
       }
     })
   }
-  
-  // For self-managed or local Elasticsearch
+
   if (connection.url) {
     const clientConfig: any = {
       node: connection.url
     }
-    
-    // Add authentication if provided
+
     if (connection.username && connection.password) {
       clientConfig.auth = {
         username: connection.username,
@@ -49,10 +46,11 @@ export async function searchDocuments(
   client: Client, 
   question: string, 
   indices: string[], 
-  elasticsearchQueryJSON: string, 
+  elasticsearchQuery: Record<string, unknown>, 
   size: number = 5
 ) {
   try {
+    const elasticsearchQueryJSON = JSON.stringify(elasticsearchQuery)
     let searchBody = elasticsearchQueryJSON.replace(/\"{query}\"/g, JSON.stringify(question))
 
     const response = await client.transport.request({

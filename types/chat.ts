@@ -21,11 +21,12 @@ export interface SummarizationModel {
 
 export interface ChatConfig {
   name: string
-  indices: string[]
-  elasticsearchQueryJSON: string
+  queryFields: Record<string, string[]>
+  elasticsearchQuery: any // Elasticsearch query object
   prompt: string
   citations: boolean
-  context: Context
+  sourceFields: Record<string, string[]>
+  docSize: number
   summarizationModel: SummarizationModel
 }
 
@@ -37,7 +38,7 @@ export interface ElasticConnection {
   password?: string
 }
 
-export type LLMProvider = 'openai' | 'azure-openai'
+export type LLMProvider = 'openai' | 'azure-openai' | 'elasticsearch'
 
 export interface LLMConfig {
   provider: LLMProvider
@@ -48,13 +49,15 @@ export interface LLMConfig {
 
 export interface ChatRequest {
   message: string
-  config: ChatConfig
-  elasticConnection: ElasticConnection
-  llmConfig: LLMConfig
 }
 
 export interface ChatResponse {
   message: string
   sources?: any[]
   error?: string
+}
+
+export interface PublicConfig {
+  name: string
+  citations: boolean
 }

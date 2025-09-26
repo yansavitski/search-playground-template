@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ChatRequest, ChatResponse } from '@/types/chat'
-import { createElasticsearchClient, searchDocuments, testConnection, checkIndexExists } from '@/lib/elasticsearch'
+import { createElasticsearchClient, searchDocuments, testConnection } from '@/lib/elasticsearch'
+import { loadConfigFromEnv } from '@/lib/config'
+
+const { config, elasticConnection, llmConfig } = loadConfigFromEnv()
 
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json()
-    const { message, config, elasticConnection, llmConfig } = body
+    const { message } = body
 
     // Validate required fields
-    if (!message || !config || !llmConfig) {
+    if (!message) {
       return NextResponse.json(
         { error: 'Missing required fields' }, 
         { status: 400 }
@@ -52,8 +55,8 @@ async function searchElasticsearch(question: string, config: any, connection: an
       client,
       question,
       config.indices,
-      config.elasticsearchQueryJSON,
-      config.context?.docSize
+      config.elasticsearchQuery,
+      config.docSize
     )
 
     return searchResults

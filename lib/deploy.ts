@@ -1,4 +1,5 @@
 import { ChatConfig, ElasticConnection, LLMConfig } from '@/types/chat'
+import { getRequiredEnvVars } from './config'
 
 export interface PlaygroundDeployConfig {
   config: ChatConfig
@@ -14,17 +15,7 @@ export function createElasticPlaygroundDeployUrl(
   playgroundConfig: PlaygroundDeployConfig,
   repositoryUrl: string = 'https://github.com/elastic/rag-playground' // Update with actual repo
 ): string {
-  // Required environment variables for the deployment
-  const envVars = [
-    'PLAYGROUND_CONFIG',
-    'ELASTIC_CLOUD_ID', 
-    'ELASTIC_API_KEY',
-    'LLM_PROVIDER',
-    'LLM_API_KEY',
-    'LLM_MODEL_NAME',
-    'LLM_BASE_URL',
-    'APP_NAME'
-  ];
+  const envVars = getRequiredEnvVars();
 
   // Encode the complete configuration
   const completeConfig = {
@@ -62,9 +53,6 @@ export function createElasticPlaygroundDeployUrl(
   if (playgroundConfig.llmConfig.apiKey) {
     deployUrl.searchParams.set('env[LLM_API_KEY]', playgroundConfig.llmConfig.apiKey);
   }
-  if (playgroundConfig.llmConfig.modelName) {
-    deployUrl.searchParams.set('env[LLM_MODEL_NAME]', playgroundConfig.llmConfig.modelName);
-  }
   if (playgroundConfig.llmConfig.baseUrl) {
     deployUrl.searchParams.set('env[LLM_BASE_URL]', playgroundConfig.llmConfig.baseUrl);
   }
@@ -73,20 +61,4 @@ export function createElasticPlaygroundDeployUrl(
   }
 
   return deployUrl.toString();
-}
-
-/**
- * Get list of required environment variables for Vercel deployment
- */
-export function getRequiredEnvVars(): string[] {
-  return [
-    'PLAYGROUND_CONFIG',
-    'ELASTIC_CLOUD_ID',
-    'ELASTIC_API_KEY',
-    'LLM_PROVIDER',
-    'LLM_API_KEY',
-    'LLM_MODEL_NAME',
-    'LLM_BASE_URL',
-    'APP_NAME'
-  ];
 }

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Message, ChatConfig, ElasticConnection, LLMConfig, ChatRequest, ChatResponse } from '@/types/chat'
-import { defaultConfig, defaultElasticConnection, defaultLLMConfig } from '@/lib/config'
+import { Message, PublicConfig, ChatRequest, ChatResponse } from '@/types/chat'
 import ChatHeader from '@/components/ChatHeader'
 import ChatMessage from '@/components/ChatMessage'
 import ChatInput from '@/components/ChatInput'
@@ -11,9 +10,7 @@ export default function HomePage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingConfig, setIsLoadingConfig] = useState(true)
-  const [config, setConfig] = useState<ChatConfig>(defaultConfig)
-  const [elasticConnection, setElasticConnection] = useState<ElasticConnection>(defaultElasticConnection)
-  const [llmConfig, setLLMConfig] = useState<LLMConfig>(defaultLLMConfig)
+  const [publicConfig, setPublicConfig] = useState<PublicConfig>({ name: 'Elastic Playground', citations: false })
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -25,19 +22,17 @@ export default function HomePage() {
     scrollToBottom()
   }, [messages])
 
-  // Load configuration from environment on component mount
+  // Load public configuration on component mount
   useEffect(() => {
     const loadConfiguration = async () => {
       try {
         const response = await fetch('/api/config')
         if (response.ok) {
-          const envConfig = await response.json()
-          setConfig(envConfig.config)
-          setElasticConnection(envConfig.elasticConnection)
-          setLLMConfig(envConfig.llmConfig)
+          const config = await response.json()
+          setPublicConfig(config)
         }
       } catch (error) {
-        console.warn('Failed to load environment configuration, using defaults:', error)
+        console.warn('Failed to load public configuration, using defaults:', error)
       } finally {
         setIsLoadingConfig(false)
       }
@@ -59,10 +54,7 @@ export default function HomePage() {
 
     try {
       const request: ChatRequest = {
-        message: content,
-        config,
-        elasticConnection,
-        llmConfig
+        message: content
       }
 
       const response = await fetch('/api/chat', {
@@ -122,14 +114,14 @@ export default function HomePage() {
 
   return (
     <div className="h-screen flex flex-col">
-      <ChatHeader title={config.name} />
+      <ChatHeader title={publicConfig.name} />
       
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                Welcome to {config.name}
+                Welcome to {publicConfig.name}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 max-w-md">
                 Start a conversation to search through your knowledge base and get AI-powered answers.
